@@ -488,7 +488,7 @@ class TransformerTTS(nn.Module):
     ).masked_fill(
       torch.triu(
           torch.full(
-              (L, S), 
+              (TIME, S), 
               True,
               device=mel.device,
               dtype=torch.bool
@@ -678,77 +678,5 @@ def test_inference():
   print("gate:", gate.shape)
 
 
-def test_torchview():
-  from torchview import draw_graph
-
-  df = pd.read_csv(hp.csv_path)
-  dataset = TextMelDataset(df)  
-
-  loader = torch.utils.data.DataLoader(
-      dataset, 
-      num_workers=1, 
-      shuffle=False,
-      sampler=None, 
-      batch_size=4,
-      pin_memory=True, 
-      drop_last=True,       
-      collate_fn=text_mel_collate_fn
-  )
-
-  model = TransformerTTS().cuda()
-  
-  for batch in loader:
-    text_padded, \
-    text_lengths, \
-    mel_padded, \
-    gate_padded, \
-    mel_lengths = batch
-
-    text_padded = text_padded.cuda()
-    text_lengths = text_lengths.cuda()
-    mel_padded = mel_padded.cuda()
-    gate_padded = gate_padded.cuda()
-    mel_lengths = mel_lengths.cuda()
-
-    post, mel, gate = model(
-      text_padded, 
-      text_lengths,
-      mel_padded,
-      mel_lengths
-    )
-
-    print("Input:")
-    print("text_padded: ", text_padded.dtype)
-    print("text_lengths: ", text_lengths.dtype)
-    print("mel_padded: ", mel_padded.dtype)
-    print("mel_lengths: ", mel_lengths.dtype)
-
-    print("\nOutput:")
-    print("post: ", post.dtype)
-    print("mel: ", mel.dtype)
-    print("gate: ", gate.dtype)
-
-    inputs = [
-      text_padded,
-      text_lengths,
-      mel_padded,
-      mel_lengths
-    ]
-
-    model_graph = draw_graph(
-      model, 
-      #input_size=[it.shape for it in inputs], 
-      input_data=inputs,
-      device='meta',
-      save_graph=True,
-      filename="model.png",
-      depth=1
-    )
-
-    #model_graph.visual_graph
-
-    break
-
-
 if __name__ == "__main__":
-  test_torchview()
+  test_inference()
