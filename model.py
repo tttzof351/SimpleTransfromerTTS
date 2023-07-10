@@ -214,10 +214,10 @@ class EncoderPreNet(nn.Module):
     self.dropout_3 = torch.nn.Dropout(0.5)    
 
   def forward(self, text):
-    x = self.embedding(text) # (N, T, E)
+    x = self.embedding(text) # (N, TIME, E)
     x = self.linear_1(x)
 
-    x = x.transpose(2, 1) # (N, E, T) 
+    x = x.transpose(2, 1) # (N, E, TIME) 
 
     x = self.conv_1(x)
     x = self.bn_1(x)
@@ -234,7 +234,7 @@ class EncoderPreNet(nn.Module):
     x = F.relu(x)
     x = self.dropout_3(x)
 
-    x = x.transpose(1, 2) # (N, T, E)
+    x = x.transpose(1, 2) # (N, TIME, E)
     x = self.linear_2(x)
 
     return x
@@ -324,38 +324,38 @@ class PostNet(nn.Module):
 
 
   def forward(self, x):
-    # x - (N, L, FREQ)
+    # x - (N, TIME, FREQ)
 
-    x = x.transpose(2, 1) # (N, FREQ, L)
+    x = x.transpose(2, 1) # (N, FREQ, TIME)
 
     x = self.conv_1(x)
     x = self.bn_1(x)
     x = torch.tanh(x)
-    x = self.dropout_1(x) # (N, POSNET_DIM, L)
+    x = self.dropout_1(x) # (N, POSNET_DIM, TIME)
 
     x = self.conv_2(x)
     x = self.bn_2(x)
     x = torch.tanh(x)
-    x = self.dropout_2(x) # (N, POSNET_DIM, L)
+    x = self.dropout_2(x) # (N, POSNET_DIM, TIME)
 
     x = self.conv_3(x)
     x = self.bn_3(x)
     x = torch.tanh(x)
-    x = self.dropout_3(x) # (N, POSNET_DIM, L)    
+    x = self.dropout_3(x) # (N, POSNET_DIM, TIME)    
 
     x = self.conv_4(x)
     x = self.bn_4(x)
     x = torch.tanh(x)
-    x = self.dropout_4(x) # (N, POSNET_DIM, L)    
+    x = self.dropout_4(x) # (N, POSNET_DIM, TIME)    
 
     x = self.conv_5(x)
     x = self.bn_5(x)
     x = torch.tanh(x)
-    x = self.dropout_5(x) # (N, POSNET_DIM, L)
+    x = self.dropout_5(x) # (N, POSNET_DIM, TIME)
 
     x = self.conv_6(x)
     x = self.bn_6(x)
-    x = self.dropout_6(x) # (N, FREQ, L)
+    x = self.dropout_6(x) # (N, FREQ, TIME)
 
     x = x.transpose(1, 2)
 
@@ -427,7 +427,7 @@ class TransformerTTS(nn.Module):
     
     N = text.shape[0]
     S = text.shape[1]
-    L = mel.shape[1]
+    TIME = mel.shape[1]
 
     self.src_key_padding_mask = torch.zeros(
         (N, S),
@@ -456,23 +456,23 @@ class TransformerTTS(nn.Module):
     )
 
     self.tgt_key_padding_mask = torch.zeros(
-      (N, L),
+      (N, TIME),
       device=mel.device
     ).masked_fill(
       ~get_mask_from_sequence_lengths(
         mel_len,
-        max_length=L
+        max_length=TIME
       ),
       float("-inf")
     )
 
     self.tgt_mask = torch.zeros(
-      (L, L),
+      (TIME, TIME),
       device=mel.device
     ).masked_fill(
       torch.triu(
           torch.full(
-              (L, L), 
+              (TIME, TIME), 
               True,
               device=mel.device,
               dtype=torch.bool
@@ -483,7 +483,7 @@ class TransformerTTS(nn.Module):
     )
 
     self.memory_mask = torch.zeros(
-      (L, S),
+      (TIME, S),
       device=mel.device
     ).masked_fill(
       torch.triu(
@@ -498,12 +498,11 @@ class TransformerTTS(nn.Module):
       float("-inf")
     )    
 
-
     text_x = self.encoder_prenet(text) # (N, S, E)    
     
     pos_codes = self.pos_encoding(
       torch.arange(hp.max_mel_time).to(mel.device)
-    ) # (MAX_S_L, E)
+    ) # (MAX_S_TIME, E)
 
     S = text_x.shape[1]
     text_x = text_x + pos_codes[:S]
@@ -526,11 +525,9 @@ class TransformerTTS(nn.Module):
     ) # (N, S, E)
 
     text_x = self.norm_memory(text_x)
-    
-
-    L = mel.shape[1] 
-    mel_x = self.decoder_prenet(mel) # (N, L, E)    
-    mel_x = mel_x + pos_codes[:L]
+        
+    mel_x = self.decoder_prenet(mel) # (N, TIME, E)    
+    mel_x = mel_x + pos_codes[:TIME]
     # dropout after pos encoding?
 
     mel_x = self.decoder_block_1(
@@ -558,12 +555,12 @@ class TransformerTTS(nn.Module):
       x_key_padding_mask=self.tgt_key_padding_mask,
       memory_attn_mask=self.memory_mask,
       memory_key_padding_mask=self.src_key_padding_mask
-    ) # (N, L, E)
+    ) # (N, TIME, E)
 
-    mel_linear = self.linear_1(mel_x) # (N, L, FREQ)
-    mel_postnet = self.postnet(mel_linear) # (N, L, FREQ)
-    mel_postnet = mel_linear + mel_postnet # (N, L, FREQ)
-    gate = self.linear_2(mel_x) # (N, L, 1)
+    mel_linear = self.linear_1(mel_x) # (N, TIME, FREQ)
+    mel_postnet = self.postnet(mel_linear) # (N, TIME, FREQ)
+    mel_postnet = mel_linear + mel_postnet # (N, TIME, FREQ)
+    gate = self.linear_2(mel_x) # (N, TIME, 1)
 
     bool_mel_mask = self.tgt_key_padding_mask.ne(0).unsqueeze(-1).repeat(
       1, 1, hp.mel_freq

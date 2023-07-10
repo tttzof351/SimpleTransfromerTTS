@@ -113,21 +113,27 @@ if __name__ == "__main__":
       batch_size=hp.batch_size,
       pin_memory=True, 
       drop_last=True, 
-      #collate_fn=TextMelCollate(),
       collate_fn=text_mel_collate_fn
   )
   
-  for batch in train_loader:
+  def names_shape(names, shape):  
+    assert len(names) == len(shape)
+    return "(" + ", ".join([f"{k}={v}" for k, v in list(zip(names, shape))]) + ")"
+
+  for i, batch in enumerate(train_loader):
     text_padded, \
     input_lengths, \
     mel_padded, \
     gate_padded, \
     output_lengths = batch
 
-    print("text_padded", text_padded.shape)
-    print("input_lengths", input_lengths.shape)
-    print("mel_padded", mel_padded.shape)
-    print("gate_padded", gate_padded.shape)
-    print("output_lengths", output_lengths.shape)
-    break
+    print("=========================")
+    print("text_padded:", names_shape(["N", "S"], text_padded.shape))
+    print("input_lengths:", names_shape(["N"], input_lengths.shape))
+    print("mel_padded:", names_shape(["N", "TIME", "FREQ"], mel_padded.shape))
+    print("gate_padded:", names_shape(["N", "TIME"], gate_padded.shape))
+    print("output_lengths:", names_shape(["N"], output_lengths.shape))
+
+    if i > 0:
+      break
 
