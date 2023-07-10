@@ -11,10 +11,10 @@ from sklearn.model_selection import train_test_split
 
 from hyperparams import hp
 from dataset import TextMelDataset, text_mel_collate_fn
-from loss import TTSLoss
+from tts_loss import TTSLoss
 from model import TransformerTTS
 from melspecs import inverse_mel_spec_to_wav
-from text_utils import text_to_seq
+from text_to_seq import text_to_seq
 
 
 def batch_process(batch):

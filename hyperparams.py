@@ -43,7 +43,7 @@ class Hyperparams:
   ampl_power = 1.0
 
   # Model params
-  text_num_embeddings =  2*len(symbols)  
+  text_num_embeddings = 2*len(symbols)  
   embedding_size = 256
   encoder_embedding_size = 512 
 
@@ -62,9 +62,6 @@ class Hyperparams:
   step_print = 1000
   step_test = 8000
   step_save = 8000
-
-
-
 
 hp = Hyperparams()
 

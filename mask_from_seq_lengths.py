@@ -1,7 +1,7 @@
 import torch
 
 
-def get_mask_from_sequence_lengths(
+def mask_from_seq_lengths(
     sequence_lengths: torch.Tensor, 
     max_length: int
 ) -> torch.BoolTensor:

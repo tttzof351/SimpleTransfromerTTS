@@ -8,8 +8,8 @@ from tqdm import tqdm
 
 from hyperparams import hp
 from dataset import TextMelDataset, text_mel_collate_fn
-from pad_mask_utils import get_mask_from_sequence_lengths
-from text_utils import text_to_seq
+from mask_from_seq_lengths import mask_from_seq_lengths
+from text_to_seq import text_to_seq
 
 # https://github.com/NVIDIA/tacotron2/blob/master/model.py
 # https://github.com/NVIDIA/tacotron2/blob/master/layers.py
@@ -433,7 +433,7 @@ class TransformerTTS(nn.Module):
         (N, S),
         device=text.device
     ).masked_fill(
-      ~get_mask_from_sequence_lengths(
+      ~mask_from_seq_lengths(
         text_len,
         max_length=S
       ),
@@ -459,7 +459,7 @@ class TransformerTTS(nn.Module):
       (N, TIME),
       device=mel.device
     ).masked_fill(
-      ~get_mask_from_sequence_lengths(
+      ~mask_from_seq_lengths(
         mel_len,
         max_length=TIME
       ),

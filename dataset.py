@@ -4,8 +4,8 @@ import pandas as pd
 
 from hyperparams import hp
 
-from text_utils import text_to_seq
-from pad_mask_utils import get_mask_from_sequence_lengths
+from text_to_seq import text_to_seq
+from mask_from_seq_lengths import mask_from_seq_lengths
 from melspecs import convert_to_mel_spec
 
 
@@ -87,7 +87,7 @@ def text_mel_collate_fn(batch):
   texts_padded = torch.stack(texts_padded, 0)
   mels_padded = torch.stack(mels_padded, 0).transpose(1, 2)
 
-  gate_padded = get_mask_from_sequence_lengths(
+  gate_padded = mask_from_seq_lengths(
       mel_lengths,
       mel_length_max
   )
@@ -127,7 +127,7 @@ if __name__ == "__main__":
     gate_padded, \
     output_lengths = batch
 
-    print("=========================")
+    print(f"=========batch {i}=========")
     print("text_padded:", names_shape(["N", "S"], text_padded.shape))
     print("input_lengths:", names_shape(["N"], input_lengths.shape))
     print("mel_padded:", names_shape(["N", "TIME", "FREQ"], mel_padded.shape))
