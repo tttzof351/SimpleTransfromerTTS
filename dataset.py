@@ -122,17 +122,17 @@ if __name__ == "__main__":
 
   for i, batch in enumerate(train_loader):
     text_padded, \
-    input_lengths, \
+    text_lengths, \
     mel_padded, \
     gate_padded, \
-    output_lengths = batch
+    mel_lengths = batch
 
     print(f"=========batch {i}=========")
     print("text_padded:", names_shape(["N", "S"], text_padded.shape))
-    print("input_lengths:", names_shape(["N"], input_lengths.shape))
+    print("text_lengths:", names_shape(["N"], text_lengths.shape))
     print("mel_padded:", names_shape(["N", "TIME", "FREQ"], mel_padded.shape))
     print("gate_padded:", names_shape(["N", "TIME"], gate_padded.shape))
-    print("output_lengths:", names_shape(["N"], output_lengths.shape))
+    print("mel_lengths:", names_shape(["N"], mel_lengths.shape))
 
     if i > 0:
       break
