@@ -3,8 +3,8 @@ class Hyperparams:
 
   csv_path = "/content/metadata.csv"
   wav_path = "/content/LJSpeech-1.1/wavs"
-  save_path = "/content/gdrive/MyDrive/Colab_Notebooks/params"  
-  log_path = "/content/gdrive/MyDrive/Colab_Notebooks/train_logs"
+  save_path = "/content/gdrive/MyDrive/Colab Notebooks/toy_tts/params"  
+  log_path = "/content/gdrive/MyDrive/Colab Notebooks/toy_tts/train_logs"
   
   save_name = "SimpleTransfromerTTS.pt"
 
