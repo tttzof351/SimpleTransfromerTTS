@@ -560,7 +560,7 @@ class TransformerTTS(nn.Module):
     mel_linear = self.linear_1(mel_x) # (N, TIME, FREQ)
     mel_postnet = self.postnet(mel_linear) # (N, TIME, FREQ)
     mel_postnet = mel_linear + mel_postnet # (N, TIME, FREQ)
-    gate = self.linear_2(mel_x) # (N, TIME, 1)
+    stop_token = self.linear_2(mel_x) # (N, TIME, 1)
 
     bool_mel_mask = self.tgt_key_padding_mask.ne(0).unsqueeze(-1).repeat(
       1, 1, hp.mel_freq
@@ -576,17 +576,17 @@ class TransformerTTS(nn.Module):
       0      
     )
 
-    gate = gate.masked_fill(
+    stop_token = stop_token.masked_fill(
       bool_mel_mask[:, :, 0].unsqueeze(-1),
       1e3
     ).squeeze(2)
     
-    return mel_postnet, mel_linear, gate 
+    return mel_postnet, mel_linear, stop_token 
 
 
 
   @torch.no_grad()
-  def inference(self, text, max_length=800, gate_threshold = 0.5, with_tqdm = True):
+  def inference(self, text, max_length=800, stop_token_threshold = 0.5, with_tqdm = True):
     self.eval()    
     self.train(False)
     text_lengths = torch.tensor(text.shape[1]).unsqueeze(0).cuda()
@@ -595,7 +595,7 @@ class TransformerTTS(nn.Module):
     
     mel_padded = SOS
     mel_lengths = torch.tensor(1).unsqueeze(0).cuda()
-    gate_outputs = torch.FloatTensor([]).to(text.device)
+    stop_token_outputs = torch.FloatTensor([]).to(text.device)
 
     if with_tqdm:
       iters = tqdm(range(max_length))
@@ -603,7 +603,7 @@ class TransformerTTS(nn.Module):
       iters = range(max_length)
 
     for _ in iters:
-      mel_postnet, mel_linear, gate = self(
+      mel_postnet, mel_linear, stop_token = self(
         text, 
         text_lengths,
         mel_padded,
@@ -617,13 +617,13 @@ class TransformerTTS(nn.Module):
         ], 
         dim=1
       )
-      if torch.sigmoid(gate[:,-1]) > gate_threshold:      
+      if torch.sigmoid(stop_token[:,-1]) > stop_token_threshold:      
         break
       else:
-        gate_outputs = torch.cat([gate_outputs, gate[:,-1:]], dim=1)
+        stop_token_outputs = torch.cat([stop_token_outputs, stop_token[:,-1:]], dim=1)
         mel_lengths = torch.tensor(mel_padded.shape[1]).unsqueeze(0).cuda()
 
-    return mel_postnet, gate_outputs
+    return mel_postnet, stop_token_outputs
 
 
 
@@ -648,16 +648,16 @@ def test_with_dataloader():
     text_padded, \
     text_lengths, \
     mel_padded, \
-    gate_padded, \
-    mel_lengths = batch
+    mel_lengths, \
+    stop_token_padded = batch
 
     text_padded = text_padded.cuda()
     text_lengths = text_lengths.cuda()
     mel_padded = mel_padded.cuda()
-    gate_padded = gate_padded.cuda()
     mel_lengths = mel_lengths.cuda()
+    stop_token_padded = stop_token_padded.cuda()    
 
-    post, mel, gate = model(
+    post, mel, stop_token = model(
       text_padded, 
       text_lengths,
       mel_padded,
@@ -665,7 +665,7 @@ def test_with_dataloader():
     )
     print("post:", post.shape) 
     print("mel:", mel.shape) 
-    print("gate:", gate.shape)
+    print("stop_token:", stop_token.shape)
 
     break
 
@@ -673,9 +673,9 @@ def test_with_dataloader():
 def test_inference():
   model = TransformerTTS().cuda()
   text = text_to_seq("Hello, world.").unsqueeze(0).cuda()
-  mel_postnet, gate = model.inference(text, gate_threshold=1e3)
+  mel_postnet, stop_token = model.inference(text, stop_token_threshold=1e3)
   print("mel_postnet:", mel_postnet.shape)
-  print("gate:", gate.shape)
+  print("stop_token:", stop_token.shape)
 
 
 if __name__ == "__main__":

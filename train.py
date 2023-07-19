@@ -21,13 +21,13 @@ def batch_process(batch):
   text_padded, \
   text_lengths, \
   mel_padded, \
-  gate_padded, \
-  mel_lengths = batch
+  mel_lengths, \
+  stop_token_padded = batch
 
   text_padded = text_padded.cuda()
   text_lengths = text_lengths.cuda()
   mel_padded = mel_padded.cuda()
-  gate_padded = gate_padded.cuda()
+  stop_token_padded = stop_token_padded.cuda()
   mel_lengths = mel_lengths.cuda()
 
   N = mel_padded.shape[0]
@@ -44,16 +44,17 @@ def batch_process(batch):
   return text_padded, \
          text_lengths, \
          mel_padded, \
-         gate_padded, \
          mel_lengths, \
-         mel_input
+         mel_input, \
+         stop_token_padded
+
 
 
 def inference_utterance(model, text):
   sequences = text_to_seq(text).unsqueeze(0).cuda()
-  postnet_mel, gate = model.inference(
+  postnet_mel, stop_token = model.inference(
     sequences, 
-    gate_threshold=1e5, 
+    stop_token_threshold=1e5, 
     with_tqdm = False
   )          
   audio = inverse_mel_spec_to_wav(postnet_mel.detach()[0].T)
@@ -75,11 +76,11 @@ def calculate_test_loss(model, test_loader):
       test_text_padded, \
       test_text_lengths, \
       test_mel_padded, \
-      test_gate_padded, \
       test_mel_lengths, \
-      test_mel_input = batch_process(batch)
+      test_mel_input, \
+      test_stop_token_padded = batch_process(batch)
 
-      test_post_mel_out, test_mel_out, test_gate_out = model(
+      test_post_mel_out, test_mel_out, test_stop_token_out = model(
         test_text_padded, 
         test_text_lengths,
         test_mel_input, 
@@ -88,9 +89,9 @@ def calculate_test_loss(model, test_loader):
       test_loss = criterion(
         mel_postnet_out = test_post_mel_out, 
         mel_out = test_mel_out, 
-        gate_out = test_gate_out, 
+        stop_token_out = test_stop_token_out, 
         mel_target = test_mel_padded, 
-        gate_target = test_gate_padded
+        stop_token_target = test_stop_token_padded
       )
 
       test_loss_mean += test_loss.item()
@@ -171,15 +172,15 @@ if __name__ == "__main__":
       text_padded, \
       text_lengths, \
       mel_padded, \
-      gate_padded, \
       mel_lengths, \
-      mel_input = batch_process(batch)
+      mel_input, \
+      stop_token_padded = batch_process(batch)
 
       model.train(True)
       model.zero_grad()
 
       with torch.autocast(device_type='cuda', dtype=torch.float16):
-        post_mel_out, mel_out, gate_out = model(
+        post_mel_out, mel_out, stop_token_out = model(
           text_padded, 
           text_lengths,
           mel_input, 
@@ -188,9 +189,9 @@ if __name__ == "__main__":
         loss = criterion(
           mel_postnet_out = post_mel_out, 
           mel_out = mel_out, 
-          gate_out = gate_out, 
+          stop_token_out = stop_token_out, 
           mel_target = mel_padded, 
-          gate_target = gate_padded
+          stop_token_target = stop_token_padded
         )
 
       scaler.scale(loss).backward()      

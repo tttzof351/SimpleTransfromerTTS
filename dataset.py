@@ -87,18 +87,19 @@ def text_mel_collate_fn(batch):
   texts_padded = torch.stack(texts_padded, 0)
   mels_padded = torch.stack(mels_padded, 0).transpose(1, 2)
 
-  gate_padded = mask_from_seq_lengths(
+  stop_token_padded = mask_from_seq_lengths(
       mel_lengths,
       mel_length_max
   )
-  gate_padded = (~gate_padded).float()
-  gate_padded[:, -1] = 1.0
+  stop_token_padded = (~stop_token_padded).float()
+  stop_token_padded[:, -1] = 1.0
   
   return texts_padded, \
          text_lengths, \
          mels_padded, \
-         gate_padded, \
-         mel_lengths
+         mel_lengths, \
+         stop_token_padded \
+
 
 
 if __name__ == "__main__":  
@@ -124,15 +125,15 @@ if __name__ == "__main__":
     text_padded, \
     text_lengths, \
     mel_padded, \
-    gate_padded, \
-    mel_lengths = batch
+    mel_lengths, \
+    stop_token_padded = batch
 
     print(f"=========batch {i}=========")
     print("text_padded:", names_shape(["N", "S"], text_padded.shape))
     print("text_lengths:", names_shape(["N"], text_lengths.shape))
     print("mel_padded:", names_shape(["N", "TIME", "FREQ"], mel_padded.shape))
-    print("gate_padded:", names_shape(["N", "TIME"], gate_padded.shape))
     print("mel_lengths:", names_shape(["N"], mel_lengths.shape))
+    print("stop_token_padded:", names_shape(["N", "TIME"], stop_token_padded.shape))
 
     if i > 0:
       break
