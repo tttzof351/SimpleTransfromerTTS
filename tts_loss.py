@@ -23,9 +23,9 @@ class TTSLoss(torch.nn.Module):
         mel_loss = self.mse_loss(mel_out, mel_target) + \
             self.mse_loss(mel_postnet_out, mel_target)
 
-        gate_loss = self.bce_loss(stop_token_out, stop_token_target) * hp.r_gate
+        stop_token_loss = self.bce_loss(stop_token_out, stop_token_target) * hp.r_gate
 
-        return mel_loss + gate_loss
+        return mel_loss + stop_token_loss
 
 if __name__ == "__main__":
   loss = TTSLoss()
