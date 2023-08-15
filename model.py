@@ -214,10 +214,10 @@ class EncoderPreNet(nn.Module):
     self.dropout_3 = torch.nn.Dropout(0.5)    
 
   def forward(self, text):
-    x = self.embedding(text) # (N, TIME, E)
+    x = self.embedding(text) # (N, S, E)
     x = self.linear_1(x)
 
-    x = x.transpose(2, 1) # (N, E, TIME) 
+    x = x.transpose(2, 1) # (N, E, S) 
 
     x = self.conv_1(x)
     x = self.bn_1(x)
@@ -234,7 +234,7 @@ class EncoderPreNet(nn.Module):
     x = F.relu(x)
     x = self.dropout_3(x)
 
-    x = x.transpose(1, 2) # (N, TIME, E)
+    x = x.transpose(1, 2) # (N, S, E)
     x = self.linear_2(x)
 
     return x
