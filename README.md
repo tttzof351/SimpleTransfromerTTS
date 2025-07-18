@@ -11,10 +11,10 @@ Train time: ~1 day on V100
 
 ![Train/test loss](assets/train_test_loss.png)
 
-## Example:
+## Example output:
 
-- hello_world: https://on.soundcloud.com/orgCk
-- london is the capital: https://on.soundcloud.com/YMZzC
+- [hello_world](assets/hello_world.mp3)
+- [london is the capital](assets/london.mp3)
 
 ## Inference:
 - Weighs: [train_SimpleTransfromerTTS.pt](https://drive.google.com/file/d/12CZIP-tLFcteT2RRfG6__w3_T47m-QJK/view?usp=sharing)
